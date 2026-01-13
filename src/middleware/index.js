@@ -42,6 +42,7 @@ export const limiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  trustProxy: false, // Override trust proxy to prevent validation error
 });
 
 export const securityHeaders = helmet({
