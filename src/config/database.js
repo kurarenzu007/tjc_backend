@@ -40,24 +40,36 @@ if (parseBooleanEnv(process.env.DB_SSL)) {
 let pool;
 
 export const initializeDatabase = async () => {
-  try {
-    pool = mysql2.createPool(dbConfig);
+  const maxRetries = 10;
+  const retryDelay = 3000; // 3 seconds
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`🔌 Database connection attempt ${attempt}/${maxRetries}...`);
+      
+      pool = mysql2.createPool(dbConfig);
 
-    // Test the connection
-    const connection = await pool.getConnection();
-    console.log('✅ Database connected successfully');
-    connection.release();
+      // Test the connection
+      const connection = await pool.getConnection();
+      console.log('✅ Database connected successfully');
+      connection.release();
 
-    return pool;
-  } catch (error) {
-    console.error('❌ Database connection failed:', {
-      message: error?.message,
-      code: error?.code,
-      errno: error?.errno,
-      sqlState: error?.sqlState,
-      sqlMessage: error?.sqlMessage,
-    });
-    throw error;
+      return pool;
+    } catch (error) {
+      console.error(`❌ Database connection attempt ${attempt} failed:`, {
+        message: error?.message,
+        code: error?.code,
+        errno: error?.errno,
+      });
+
+      if (attempt === maxRetries) {
+        console.error('💀 Max retry attempts reached. Database connection failed permanently.');
+        throw error;
+      }
+
+      console.log(`⏳ Retrying in ${retryDelay / 1000} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+    }
   }
 };
 
