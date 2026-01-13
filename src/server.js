@@ -45,6 +45,7 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 app.use(securityHeaders);
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));

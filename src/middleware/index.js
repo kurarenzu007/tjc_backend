@@ -7,15 +7,28 @@ dotenv.config();
 
 // Helper to clean up URL string
 const envFrontendUrl = (process.env.FRONTEND_URL || '').trim().replace(/\/$/, '');
+const vercelProjectOriginRegex = /^https:\/\/tjc-autosupply(?:-[a-z0-9-]+)?\.vercel\.app$/i;
 
 // CORS configuration
 export const corsOptions = {
-  origin: [
-    envFrontendUrl,           // From .env
-    'http://localhost:5173',  // Standard Vite
-    'http://127.0.0.1:5173',  // IP based Vite
-    'http://localhost:3000'   // Backup
-  ].filter(Boolean),
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+
+    const cleanedOrigin = String(origin).trim().replace(/\/$/, '');
+    const allowedOrigins = [
+      envFrontendUrl,
+      'https://tjc-autosupply.vercel.app',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://localhost:3000'
+    ].filter(Boolean);
+
+    if (allowedOrigins.includes(cleanedOrigin) || vercelProjectOriginRegex.test(cleanedOrigin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${cleanedOrigin}`));
+  },
   credentials: true,
   optionsSuccessStatus: 200
 };
