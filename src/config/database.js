@@ -9,22 +9,26 @@ if (missingEnv.length) {
   throw new Error(`Missing required environment variables: ${missingEnv.join(', ')}`);
 }
 
+const getTrimmedEnv = (key) => {
+  const v = process.env[key];
+  return typeof v === 'string' ? v.trim() : v;
+};
+
 const parseBooleanEnv = (value) => {
   if (value == null) return false;
   return ['1', 'true', 'yes', 'on'].includes(String(value).trim().toLowerCase());
 };
 
 const dbConfig = {
-  host: process.env.DB_HOST,
+  host: getTrimmedEnv('DB_HOST'),
   port: Number(process.env.DB_PORT),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+  user: getTrimmedEnv('DB_USER'),
+  password: getTrimmedEnv('DB_PASSWORD'),
+  database: getTrimmedEnv('DB_NAME'),
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  acquireTimeout: 60000,
-  timeout: 60000,
+  connectTimeout: 60000,
 };
 
 if (parseBooleanEnv(process.env.DB_SSL)) {
@@ -46,7 +50,13 @@ export const initializeDatabase = async () => {
 
     return pool;
   } catch (error) {
-    console.error('❌ Database connection failed:', error.message);
+    console.error('❌ Database connection failed:', {
+      message: error?.message,
+      code: error?.code,
+      errno: error?.errno,
+      sqlState: error?.sqlState,
+      sqlMessage: error?.sqlMessage,
+    });
     throw error;
   }
 };
