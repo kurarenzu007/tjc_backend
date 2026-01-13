@@ -18,6 +18,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust proxy for Railway (fixes rate limiter warning)
+app.set('trust proxy', true);
+
 let server;
 
 const gracefulShutdown = async (signal) => {
