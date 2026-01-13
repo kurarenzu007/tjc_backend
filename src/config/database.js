@@ -1,5 +1,6 @@
 import mysql2 from 'mysql2/promise';
 import dotenv from 'dotenv';
+import runMigration from '../../migrate.js';
 
 dotenv.config();
 
@@ -53,6 +54,11 @@ export const initializeDatabase = async () => {
       const connection = await pool.getConnection();
       console.log('✅ Database connected successfully');
       connection.release();
+
+      // Run migrations to create tables
+      console.log('🔄 Running database migrations...');
+      await runMigration();
+      console.log('✅ Database migrations completed');
 
       return pool;
     } catch (error) {
