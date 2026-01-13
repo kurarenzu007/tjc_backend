@@ -32,8 +32,8 @@ async function runMigration() {
     
     // Create database if it doesn't exist
     const dbName = process.env.DB_NAME;
-    await connection.execute(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
-    await connection.execute(`USE \`${dbName}\``);
+    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
+    await connection.query(`USE \`${dbName}\``);
     console.log(`✅ Database '${dbName}' ready`);
     
     // Split SQL into individual statements (basic split)
@@ -49,7 +49,7 @@ async function runMigration() {
       const statement = statements[i];
       if (statement.trim()) {
         try {
-          await connection.execute(statement);
+          await connection.query(statement);
           console.log(`✅ Statement ${i + 1}/${statements.length} executed successfully`);
         } catch (error) {
           // Some statements might fail (like if tables already exist)
