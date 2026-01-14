@@ -31,6 +31,9 @@ export class Product {
   static async findAll(filters = {}, limit = 10, offset = 0) {
     const pool = getPool();
     
+    // Debug: Log the types of limit and offset
+    console.log('Product.findAll called with limit:', limit, 'type:', typeof limit, 'offset:', offset, 'type:', typeof offset);
+    
     let whereClause = ' WHERE 1=1';
     let params = [];
     // [FIX] Added unit to filters
@@ -73,7 +76,20 @@ export class Product {
     const dataParams = [...params, Number(limit), Number(offset)];
     const countQuery = `SELECT COUNT(*) as total FROM products ${whereClause}`;
 
-    const [rows] = await pool.execute(dataQuery, dataParams);
+    // Explicitly cast limit and offset to Numbers immediately before database call
+    const finalLimit = Number(limit) || 10;
+    const finalOffset = Number(offset) || 0;
+    
+    // Debug: Log the final values
+    console.log('Final values - limit:', finalLimit, 'type:', typeof finalLimit, 'offset:', finalOffset, 'type:', typeof finalOffset);
+    
+    // Update params array to use finalLimit and finalOffset
+    const finalDataParams = [...params, finalLimit, finalOffset];
+    
+    // Debug: Log the final params array
+    console.log('Final params array:', finalDataParams.map(p => ({ value: p, type: typeof p })));
+
+    const [rows] = await pool.execute(dataQuery, finalDataParams);
     const [countResult] = await pool.execute(countQuery, params);
 
     return {
