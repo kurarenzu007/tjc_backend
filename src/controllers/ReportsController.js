@@ -18,8 +18,11 @@ export class ReportsController {
   // 1. SALES REPORT
   static async getSalesReport(req, res) {
     try {
-      const { page = 1, limit = 10, start_date, end_date } = req.query;
-      const offset = (parseInt(page) - 1) * parseInt(limit);
+      const { start_date, end_date } = req.query;
+      // Force conversion to integers with default values
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
       const pool = getPool();
 
       const baseWhere = `
@@ -61,7 +64,7 @@ export class ReportsController {
         LIMIT ? OFFSET ?
       `;
       
-      const queryParams = [...params, parseInt(limit), parseInt(offset)];
+      const queryParams = [...params, Number(limit), Number(offset)];
       const [items] = await pool.execute(query, queryParams);
 
       // Get Counts and Summary
@@ -108,10 +111,10 @@ export class ReportsController {
         data: {
           sales: formattedItems,
           pagination: {
-            current_page: parseInt(page),
-            per_page: parseInt(limit),
+            current_page: Number(page),
+            per_page: Number(limit),
             total: summary.totalItems,
-            total_pages: Math.ceil(summary.totalItems / parseInt(limit)) || 1,
+            total_pages: Math.ceil(summary.totalItems / Number(limit)) || 1,
           },
           summary: summary
         }
@@ -126,8 +129,11 @@ export class ReportsController {
   // 2. INVENTORY REPORT
   static async getInventoryReport(req, res) {
     try {
-      const { page = 1, limit = 10, search, category, brand, status, stock_status, type } = req.query; // [FIX] Added 'type'
-      const offset = (parseInt(page) - 1) * parseInt(limit);
+      const { search, category, brand, status, stock_status, type } = req.query;
+      // Force conversion to integers with default values
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
       const pool = getPool();
 
       // --- 1. BUILD BASE FILTERS ---
@@ -212,7 +218,7 @@ export class ReportsController {
         LIMIT ? OFFSET ?
       `;
 
-      const listParams = [...params, parseInt(limit), parseInt(offset)];
+      const listParams = [...params, Number(limit), Number(offset)];
       const [products] = await pool.execute(listQuery, listParams);
 
       res.json({
@@ -231,10 +237,10 @@ export class ReportsController {
             createdDate: ReportsController.convertToPhilippineTime(product.created_at)
           })) : [],
           pagination: {
-            current_page: parseInt(page),
-            per_page: parseInt(limit),
+            current_page: Number(page),
+            per_page: Number(limit),
             total: summary.totalProducts, 
-            total_pages: Math.ceil(summary.totalProducts / parseInt(limit)) || 1,
+            total_pages: Math.ceil(summary.totalProducts / Number(limit)) || 1,
           },
           summary: summary
         }
@@ -248,8 +254,11 @@ export class ReportsController {
   // 3. SMART DEAD STOCK REPORT
   static async getDeadStockReport(req, res) {
     try {
-      const { page = 1, limit = 10, months = 6, brand, category } = req.query;
-      const offset = (parseInt(page) - 1) * parseInt(limit);
+      const { months = 6, brand, category } = req.query;
+      // Force conversion to integers with default values
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
       const pool = getPool();
       
       const filterParams = [];
@@ -317,7 +326,7 @@ export class ReportsController {
       allDeadStock.sort((a, b) => (b.price * b.current_stock) - (a.price * a.current_stock));
 
       const totalItems = allDeadStock.length;
-      const paginatedData = allDeadStock.slice(offset, offset + parseInt(limit));
+      const paginatedData = allDeadStock.slice(offset, offset + Number(limit));
 
       const summary = {
         totalDeadItems: totalItems,
@@ -344,10 +353,10 @@ export class ReportsController {
             reason: item.type === 'SKU' ? 'Product not selling' : 'Old Unit / Aged Stock'
           })),
           pagination: {
-            current_page: parseInt(page),
-            per_page: parseInt(limit),
+            current_page: Number(page),
+            per_page: Number(limit),
             total: totalItems,
-            total_pages: Math.ceil(totalItems / parseInt(limit)) || 1
+            total_pages: Math.ceil(totalItems / Number(limit)) || 1
           },
           summary
         }
@@ -362,10 +371,13 @@ export class ReportsController {
   // 4. RETURNS REPORT
   static async getReturnsReport(req, res) {
     try {
-      const { page = 1, limit = 10, start_date, end_date, returnReason } = req.query;
-      const offset = (parseInt(page) - 1) * parseInt(limit);
+      const { start_date, end_date, returnReason } = req.query;
+      // Force conversion to integers with default values
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
 
-      const filters = { startDate: start_date, endDate: end_date, returnReason, limit: parseInt(limit), offset: parseInt(offset) };
+      const filters = { startDate: start_date, endDate: end_date, returnReason, limit: Number(limit), offset: Number(offset) };
       const returns = await Return.getAllReturns(filters);
 
       // Eager Load Return Items
@@ -406,10 +418,10 @@ export class ReportsController {
         data: {
           returns: returns || [],
           pagination: {
-            current_page: parseInt(page),
-            per_page: parseInt(limit),
+            current_page: Number(page),
+            per_page: Number(limit),
             total: total,
-            total_pages: Math.ceil(total / parseInt(limit)) || 1,
+            total_pages: Math.ceil(total / Number(limit)) || 1,
           },
           summary: summary
         }

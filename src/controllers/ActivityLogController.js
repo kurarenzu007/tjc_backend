@@ -3,13 +3,16 @@ import { ActivityLog } from '../models/ActivityLog.js';
 export class ActivityLogController {
   static async getLogs(req, res) {
     try {
-      const { page = 1, limit = 20, search, startDate, endDate } = req.query;
+      const { search, startDate, endDate } = req.query;
+      // Force conversion to integers with default values
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 20;
       const offset = (page - 1) * limit;
 
       const result = await ActivityLog.findAll(
         { search, startDate, endDate }, 
-        limit, 
-        offset
+        Number(limit), 
+        Number(offset)
       );
 
       res.json({
@@ -17,8 +20,8 @@ export class ActivityLogController {
         data: result.logs,
         pagination: {
             total: result.total,
-            page: parseInt(page),
-            limit: parseInt(limit),
+            page: Number(page),
+            limit: Number(limit),
             totalPages: Math.ceil(result.total / limit)
         }
       });

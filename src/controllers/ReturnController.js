@@ -144,14 +144,17 @@ export const ReturnController = {
   // Get all returns with filters
   getAllReturns: async (req, res) => {
     try {
-      const { startDate, endDate, returnReason, limit, offset } = req.query;
+      const { startDate, endDate, returnReason } = req.query;
+      // Force conversion to integers with default values
+      const limit = Number(req.query.limit) || 50;
+      const offset = ((Number(req.query.page) || 1) - 1) * limit;
 
       const filters = {
         startDate,
         endDate,
         returnReason,
-        limit: limit || 50,
-        offset: offset || 0
+        limit: Number(limit),
+        offset: Number(offset)
       };
 
       const returns = await Return.getAllReturns(filters);
