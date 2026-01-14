@@ -2,15 +2,16 @@ import { Product } from '../models/Product.js';
 import { ActivityLog } from '../models/ActivityLog.js';
 
 export class ProductController {
-  
+
   static async getAllProducts(req, res) {
     try {
       const { search, category, brand, status, unit } = req.query;
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 10;
+      // Force conversion to integers with default values
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
       const offset = (page - 1) * limit;
       const filters = { search, category, brand, status, unit };
-      const result = await Product.findAll(filters, limit, offset);
+      const result = await Product.findAll(filters, Number(limit), Number(offset));
       const products = result.products || result || [];
       const totalCount = result.total || products.length;
       res.json({

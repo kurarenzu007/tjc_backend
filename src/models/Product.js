@@ -70,7 +70,7 @@ export class Product {
       LIMIT ? OFFSET ?
     `;
     
-    const dataParams = [...params, parseInt(limit), parseInt(offset)];
+    const dataParams = [...params, Number(limit), Number(offset)];
     const countQuery = `SELECT COUNT(*) as total FROM products ${whereClause}`;
 
     const [rows] = await pool.execute(dataQuery, dataParams);

@@ -86,7 +86,10 @@ export class SalesController {
   // [FIXED] Optimized getAllSales with Eager Loading
   static async getAllSales(req, res) {
     try {
-      const { search, date_from, date_to, delivery_type, page = 1, limit = 10 } = req.query;
+      const { search, date_from, date_to, delivery_type } = req.query;
+      // Force conversion to integers with default values
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
       const offset = (page - 1) * limit;
 
       let countQuery = "SELECT COUNT(*) as total FROM sales WHERE 1=1";
@@ -131,7 +134,7 @@ export class SalesController {
       const totalPages = Math.ceil(total / limit);
 
       query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-      params.push(parseInt(limit), parseInt(offset));
+      params.push(Number(limit), Number(offset));
 
       const [sales] = await pool.execute(query, params);
 
@@ -169,12 +172,12 @@ export class SalesController {
         data: {
           sales,
           pagination: {
-            current_page: parseInt(page),
-            per_page: parseInt(limit),
+            current_page: Number(page),
+            per_page: Number(limit),
             total,
             total_pages: totalPages,
             from: offset + 1,
-            to: Math.min(offset + parseInt(limit), total)
+            to: Math.min(offset + Number(limit), total)
           }
         }
       });
