@@ -31,9 +31,6 @@ export class Product {
   static async findAll(filters = {}, limit = 10, offset = 0) {
     const pool = getPool();
     
-    // Debug: Log the types of limit and offset
-    console.log('Product.findAll called with limit:', limit, 'type:', typeof limit, 'offset:', offset, 'type:', typeof offset);
-    
     let whereClause = ' WHERE 1=1';
     let params = [];
     // [FIX] Added unit to filters
@@ -61,35 +58,27 @@ export class Product {
       params.push(unit);
     }
 
-    // [FIX] Subquery to get live inventory stock
-    const quantitySubquery = `(SELECT COALESCE(SUM(stock), 0) FROM inventory WHERE product_id = products.product_id)`;
-
+    // [FIX] Use JOIN instead of subquery to avoid prepared statement issues
     const dataQuery = `
-      SELECT products.*, 
-      ${quantitySubquery} as quantity 
-      FROM products 
+      SELECT p.*, COALESCE(i.stock, 0) as quantity 
+      FROM products p 
+      LEFT JOIN inventory i ON p.product_id = i.product_id 
       ${whereClause} 
-      ORDER BY created_at DESC 
+      ORDER BY p.created_at DESC 
       LIMIT ? OFFSET ?
     `;
     
     const dataParams = [...params, Number(limit), Number(offset)];
-    const countQuery = `SELECT COUNT(*) as total FROM products ${whereClause}`;
+    const countQuery = `SELECT COUNT(*) as total FROM products p ${whereClause}`;
 
     // Explicitly cast limit and offset to Numbers immediately before database call
     const finalLimit = Number(limit) || 10;
     const finalOffset = Number(offset) || 0;
     
-    // Debug: Log the final values
-    console.log('Final values - limit:', finalLimit, 'type:', typeof finalLimit, 'offset:', finalOffset, 'type:', typeof finalOffset);
-    
     // Update params array to use finalLimit and finalOffset
     const finalDataParams = [...params, finalLimit, finalOffset];
-    
-    // Debug: Log the final params array
-    console.log('Final params array:', finalDataParams.map(p => ({ value: p, type: typeof p })));
 
-    const [rows] = await pool.execute(dataQuery, finalDataParams);
+    const [rows] = await pool.query(dataQuery, finalDataParams);
     const [countResult] = await pool.execute(countQuery, params);
 
     return {

@@ -35,9 +35,9 @@ export class ActivityLog {
     const [countResult] = await pool.execute(countQuery, params);
     
     query += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`;
-    params.push(parseInt(limit), parseInt(offset));
+    params.push(Number(limit), Number(offset));
     
-    const [rows] = await pool.execute(query, params);
+    const [rows] = await pool.query(query, params);
 
     return {
       logs: rows,

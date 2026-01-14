@@ -5,7 +5,7 @@ SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
 
 -- 2. CLEAN SLATE (Deletes old broken tables)
-DROP TABLE IF EXISTS `serial_numbers`, `return_items`, `refund_transactions`, `returns`, `sale_items`, `sales`, `inventory_transactions`, `inventory`, `products`, `brands`, `categories`, `suppliers`, `users`, `app_settings`;
+DROP TABLE IF EXISTS `refund_transactions`, `return_items`, `returns`, `activity_logs`, `serial_numbers`, `sale_items`, `sales`, `inventory_transactions`, `inventory`, `products`, `brands`, `categories`, `suppliers`, `users`, `app_settings`;
 
 START TRANSACTION;
 
@@ -55,6 +55,7 @@ CREATE TABLE `products` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `vehicle_compatibility` text DEFAULT NULL,
   `requires_serial` tinyint(1) NOT NULL DEFAULT 0,
+  `unit_tag` varchar(20) DEFAULT 'EA',
   PRIMARY KEY (`id`),
   UNIQUE KEY `product_id` (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -137,6 +138,60 @@ CREATE TABLE `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `username` (`username`),
   UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `activity_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `username` varchar(50) NOT NULL,
+  `action` varchar(100) NOT NULL,
+  `details` text DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `returns` (
+  `return_id` int(11) NOT NULL AUTO_INCREMENT,
+  `order_id` int(11) NOT NULL,
+  `sale_number` varchar(50) NOT NULL,
+  `customer_name` varchar(100) NOT NULL,
+  `return_reason` varchar(255) NOT NULL,
+  `refund_method` varchar(50) NOT NULL,
+  `reference_number` varchar(100) DEFAULT NULL,
+  `restocked` tinyint(1) NOT NULL DEFAULT 1,
+  `photo_proof` varchar(255) DEFAULT NULL,
+  `additional_notes` text DEFAULT NULL,
+  `processed_by` varchar(50) NOT NULL,
+  `return_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `status` enum('Pending','Processing','Completed','Rejected') DEFAULT 'Pending',
+  PRIMARY KEY (`return_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `return_items` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `return_id` int(11) NOT NULL,
+  `product_id` varchar(20) NOT NULL,
+  `product_name` varchar(100) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `reason` varchar(255) DEFAULT NULL,
+  `condition` varchar(50) DEFAULT NULL,
+  `returned_quantity` int(11) DEFAULT 0,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `return_items_ibfk_1` FOREIGN KEY (`return_id`) REFERENCES `returns` (`return_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `refund_transactions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `return_id` int(11) NOT NULL,
+  `refund_method` varchar(50) NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `reference_number` varchar(100) DEFAULT NULL,
+  `processed_by` varchar(50) NOT NULL,
+  `processed_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `status` enum('Pending','Completed','Failed') DEFAULT 'Pending',
+  PRIMARY KEY (`id`),
+  CONSTRAINT `refund_transactions_ibfk_1` FOREIGN KEY (`return_id`) REFERENCES `returns` (`return_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- 4. INSERT DATA (Truncated for space, ensure your file includes all original rows)

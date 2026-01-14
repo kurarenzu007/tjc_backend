@@ -299,10 +299,10 @@ export class Return {
 
     if (filters.limit) {
       query += ' LIMIT ? OFFSET ?';
-      params.push(parseInt(filters.limit), parseInt(filters.offset || 0));
+      params.push(Number(filters.limit), Number(filters.offset || 0));
     }
 
-    const [returns] = await pool.execute(query, params);
+    const [returns] = await pool.query(query, params);
     
     // Fetch Items for returns if needed (optional optimization loop here)
     for (const ret of returns) {
