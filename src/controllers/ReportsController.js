@@ -46,7 +46,7 @@ export class ReportsController {
       const query = `
         SELECT 
           si.product_name,
-          si.brand,
+          p.brand,
           si.price as unit_price,
           (si.quantity - COALESCE(si.returned_quantity, 0)) as quantity_sold,
           ((si.quantity - COALESCE(si.returned_quantity, 0)) * si.price) as total_item_price,
@@ -58,6 +58,7 @@ export class ReportsController {
           s.payment_status as payment_status
         FROM sale_items si
         JOIN sales s ON si.sale_id = s.id
+        LEFT JOIN products p ON si.product_id = p.product_id
         ${baseWhere}
         ${dateFilter}
         ORDER BY s.created_at DESC
@@ -65,7 +66,7 @@ export class ReportsController {
       `;
       
       const queryParams = [...params, Number(limit), Number(offset)];
-      const [items] = await pool.execute(query, queryParams);
+      const [items] = await pool.query(query, queryParams);
 
       // Get Counts and Summary
       const summaryQuery = `
@@ -75,10 +76,11 @@ export class ReportsController {
           SUM((si.quantity - COALESCE(si.returned_quantity, 0)) * si.price) as total_revenue
         FROM sale_items si
         JOIN sales s ON si.sale_id = s.id
+        LEFT JOIN products p ON si.product_id = p.product_id
         ${baseWhere}
         ${dateFilter}
       `;
-      const [summaryResult] = await pool.execute(summaryQuery, params);
+      const [summaryResult] = await pool.query(summaryQuery, params);
       const stats = summaryResult[0] || {};
       
       const summary = {
@@ -189,7 +191,7 @@ export class ReportsController {
         ${baseConditions}
       `;
       
-      const [summaryResult] = await pool.execute(summaryQuery, params);
+      const [summaryResult] = await pool.query(summaryQuery, params);
       const stats = summaryResult[0] || {};
 
       const summary = {
@@ -219,7 +221,7 @@ export class ReportsController {
       `;
 
       const listParams = [...params, Number(limit), Number(offset)];
-      const [products] = await pool.execute(listQuery, listParams);
+      const [products] = await pool.query(listQuery, listParams);
 
       res.json({
         success: true,
@@ -289,10 +291,10 @@ export class ReportsController {
         LEFT JOIN sales s ON si.sale_id = s.id AND s.status NOT IN ('Cancelled', 'Returned')
         WHERE i.stock > 0
         ${filters}
-        GROUP BY p.product_id
+        GROUP BY p.product_id, p.name, p.brand, p.category, p.price, p.created_at, i.stock
         HAVING ${havingClause}
       `;
-      const [deadSKUs] = await pool.execute(skuQuery, [...filterParams, monthsInt, monthsInt]);
+      const [deadSKUs] = await pool.query(skuQuery, [...filterParams, monthsInt, monthsInt]);
 
       // 2. Fetch Aged Serials (Specific units old, but product might be active)
       const deadSkuIds = Array.isArray(deadSKUs) ? deadSKUs.map(i => i.product_id) : [];
@@ -319,7 +321,7 @@ export class ReportsController {
       `;
       
       const serialParams = [monthsInt, ...filterParams, ...deadSkuIds];
-      const [agedSerials] = await pool.execute(serialQuery, serialParams);
+      const [agedSerials] = await pool.query(serialQuery, serialParams);
 
       // 3. Merge, Sort, and Paginate
       const allDeadStock = [...(deadSKUs || []), ...(agedSerials || [])];
@@ -386,7 +388,7 @@ export class ReportsController {
           const returnIds = returns.map(r => r.return_id);
           const placeholders = returnIds.map(() => '?').join(',');
           
-          const [items] = await pool.execute(
+          const [items] = await pool.query(
               `SELECT * FROM return_items WHERE return_id IN (${placeholders})`,
               returnIds
           );
@@ -408,7 +410,7 @@ export class ReportsController {
       if (end_date) { countQuery += ' AND return_date <= ?'; countParams.push(end_date); }
       if (returnReason) { countQuery += ' AND return_reason = ?'; countParams.push(returnReason); }
 
-      const [totalResult] = await pool.execute(countQuery, countParams);
+      const [totalResult] = await pool.query(countQuery, countParams);
       const total = totalResult[0].total;
 
       const summary = await Return.getReturnStats();
@@ -436,8 +438,8 @@ export class ReportsController {
   static async getFilterOptions(req, res) {
     try {
       const pool = getPool();
-      const [brands] = await pool.execute(`SELECT DISTINCT brand FROM products WHERE brand IS NOT NULL AND brand != '' AND status = 'Active' ORDER BY brand`);
-      const [categories] = await pool.execute(`SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category != '' AND status = 'Active' ORDER BY category`);
+      const [brands] = await pool.query(`SELECT DISTINCT brand FROM products WHERE brand IS NOT NULL AND brand != '' AND status = 'Active' ORDER BY brand`);
+      const [categories] = await pool.query(`SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category != '' AND status = 'Active' ORDER BY category`);
 
       res.json({
         success: true,
