@@ -93,8 +93,8 @@ export class Product {
     const quantitySubquery = `(SELECT COALESCE(SUM(stock), 0) FROM inventory WHERE product_id = products.product_id)`;
     
     const [rows] = await pool.execute(
-      `SELECT products.*, ${quantitySubquery} as quantity FROM products WHERE product_id = ? OR id = ?`,
-      [id, id]
+      `SELECT products.*, ${quantitySubquery} as quantity FROM products WHERE product_id = ?`,
+      [id]
     );
     return rows[0] || null;
   }
@@ -126,10 +126,8 @@ export class Product {
     if (updates.length === 0) throw new Error('No fields to update');
 
     params.push(id);
-    // Supports updating by ID or product_id string
-    const query = `UPDATE products SET ${updates.join(', ')}, updated_at = NOW() WHERE product_id = ? OR id = ?`;
-    // Push ID twice for the WHERE clause
-    params.push(id); 
+    // Use only product_id since frontend sends string product_id (e.g., 'P004')
+    const query = `UPDATE products SET ${updates.join(', ')}, updated_at = NOW() WHERE product_id = ?`;
     
     const [result] = await pool.execute(query, params);
     return result.affectedRows > 0;
@@ -137,7 +135,7 @@ export class Product {
 
   static async delete(id) {
     const pool = getPool();
-    const [prodRows] = await pool.execute('SELECT product_id FROM products WHERE id = ? OR product_id = ?', [id, id]);
+    const [prodRows] = await pool.execute('SELECT product_id FROM products WHERE product_id = ?', [id]);
     if (prodRows.length === 0) return false;
     const productId = prodRows[0].product_id;
 
@@ -147,7 +145,7 @@ export class Product {
       err.code = 'PRODUCT_IN_USE';
       throw err;
     }
-    const [result] = await pool.execute('DELETE FROM products WHERE id = ? OR product_id = ?', [id, id]);
+    const [result] = await pool.execute('DELETE FROM products WHERE product_id = ?', [id]);
     return result.affectedRows > 0;
   }
   
