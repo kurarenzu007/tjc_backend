@@ -62,6 +62,18 @@ export class UsersController {
   static async update(req, res) {
     try {
       const { id } = req.params;
+      
+      // [DEFENSIVE] Validate ID is present and not 'null'
+      if (!id || id === 'null' || id === 'undefined') {
+        return res.status(400).json({ success: false, message: 'Valid user ID is required' });
+      }
+      
+      // [DEFENSIVE] Ensure ID is a valid number
+      const userId = parseInt(id);
+      if (isNaN(userId) || userId <= 0) {
+        return res.status(400).json({ success: false, message: 'Invalid user ID format' });
+      }
+      
       // [UPDATED] Accept more fields for profile updates
       const { username, first_name, last_name, email, role, status } = req.body;
       const pool = getPool();
@@ -75,16 +87,19 @@ export class UsersController {
       if (role !== undefined) { updates.push('role = ?'); params.push(role); }
       if (status !== undefined) { updates.push('status = ?'); params.push(status); }
       
+      // [FIXED] Handle avatar properly - only update if new file uploaded
       let avatarPath = null;
       if (req.file) { 
         avatarPath = `/${req.file.path.replace(/\\/g, '/')}`.replace('src/', '');
         updates.push('avatar = ?'); 
         params.push(avatarPath); 
       }
+      // If no new file uploaded, don't change avatar (keep existing value)
 
       if (updates.length === 0) return res.status(400).json({ success: false, message: 'No fields to update' });
       
-      params.push(id);
+      // [DEFENSIVE] Use validated numeric ID
+      params.push(userId);
       await pool.execute(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
       
       res.json({ success: true, message: 'Profile updated successfully', avatar: avatarPath || undefined });
