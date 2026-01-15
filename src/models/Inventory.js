@@ -249,7 +249,7 @@ export class Inventory {
            ) VALUES (?, ?, ?, 'in', ?, ?, ?, ?, ?)`,
           [
             transactionId, inventoryId, productId,
-            quantity, serialsLog, notes, transactionDate, receivedBy
+            quantity, serialsLog, notes, transactionDate, 'Admin'
           ]
         );
       }

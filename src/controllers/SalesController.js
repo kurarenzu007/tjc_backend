@@ -129,14 +129,14 @@ export class SalesController {
 
       const pool = getPool();
       
-      const [totalResult] = await pool.execute(countQuery, countParams);
+      const [totalResult] = await pool.query(countQuery, countParams);
       const total = totalResult[0].total;
       const totalPages = Math.ceil(total / limit);
 
       query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
       params.push(Number(limit), Number(offset));
 
-      const [sales] = await pool.execute(query, params);
+      const [sales] = await pool.query(query, params);
 
       // --- EAGER LOADING FIX START ---
       if (sales.length > 0) {
@@ -146,7 +146,7 @@ export class SalesController {
         // We construct a placeholder string like "?, ?, ?" based on how many sales we found
         const placeholders = saleIds.map(() => '?').join(',');
         
-        const [allSaleItems] = await pool.execute(
+        const [allSaleItems] = await pool.query(
           `SELECT * FROM sale_items WHERE sale_id IN (${placeholders})`, 
           saleIds
         );
@@ -329,7 +329,7 @@ export class SalesController {
         params.push(date_to);
       }
 
-      const [rows] = await pool.execute(query, params);
+      const [rows] = await pool.query(query, params);
       
       res.json({
         success: true,

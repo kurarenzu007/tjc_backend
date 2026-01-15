@@ -46,7 +46,7 @@ export class ReportsController {
       const query = `
         SELECT 
           si.product_name,
-          p.brand,
+          si.brand,
           si.price as unit_price,
           (si.quantity - COALESCE(si.returned_quantity, 0)) as quantity_sold,
           ((si.quantity - COALESCE(si.returned_quantity, 0)) * si.price) as total_item_price,
@@ -58,7 +58,6 @@ export class ReportsController {
           s.payment_status as payment_status
         FROM sale_items si
         JOIN sales s ON si.sale_id = s.id
-        LEFT JOIN products p ON si.product_id = p.product_id
         ${baseWhere}
         ${dateFilter}
         ORDER BY s.created_at DESC
@@ -76,7 +75,6 @@ export class ReportsController {
           SUM((si.quantity - COALESCE(si.returned_quantity, 0)) * si.price) as total_revenue
         FROM sale_items si
         JOIN sales s ON si.sale_id = s.id
-        LEFT JOIN products p ON si.product_id = p.product_id
         ${baseWhere}
         ${dateFilter}
       `;
