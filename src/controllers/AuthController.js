@@ -7,10 +7,16 @@ export class AuthController {
     try {
       const { email, password } = req.body;
       if (!email || !password) {
-        return res.status(400).json({ success: false, message: 'Email and password are required' });
+        return res.status(400).json({ success: false, message: 'Username/Email and password are required' });
       }
       const pool = getPool();
+      // [FIX] Allow login with either username or email
       let [rows] = await pool.execute('SELECT id, username, email, password_hash, role, status, avatar FROM users WHERE email = ?', [email]);
+
+      if (rows.length === 0) {
+        // Try searching by username if email not found
+        [rows] = await pool.execute('SELECT id, username, email, password_hash, role, status, avatar FROM users WHERE username = ?', [email]);
+      }
 
       if (rows.length === 0) {
         // Bootstrap admin if needed (omitted for brevity, keep your original logic here if needed)
